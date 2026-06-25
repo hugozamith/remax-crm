@@ -103,7 +103,9 @@ On your **web service** (not the database), add these variables:
 
 ### 4. Deploy
 
-Railway will run `npm run build` (includes Prisma migrations) and start the app.
+Railway runs `npm run build` (Prisma client + Next.js). Database migrations run automatically when the app starts.
+
+**Important:** On the web service, add `DATABASE_URL` as a **reference** to your Postgres service — click **Add variable → Reference** and pick `DATABASE_URL` from PostgreSQL. Do not leave it unset.
 
 ### 5. Seed the database (first time only)
 
