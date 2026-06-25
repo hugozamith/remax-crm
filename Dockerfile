@@ -12,7 +12,6 @@ COPY . .
 RUN npx prisma generate && npm run build
 
 ENV NODE_ENV=production
-ENV HOSTNAME=::
 
 EXPOSE 3000
 
