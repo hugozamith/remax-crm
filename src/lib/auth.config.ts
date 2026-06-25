@@ -1,8 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
-import type { Role } from "@prisma/client";
 
 export const authConfig = {
   trustHost: true,
+  secret: process.env.AUTH_SECRET,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -12,14 +12,14 @@ export const authConfig = {
     jwt: async ({ token, user }) => {
       if (user) {
         token.id = user.id!;
-        token.role = user.role as Role;
+        token.role = user.role;
       }
       return token;
     },
     session: async ({ session, token }) => {
       if (token?.id && token?.role) {
         session.user.id = token.id as string;
-        session.user.role = token.role as Role;
+        session.user.role = token.role as "AGENT" | "ADMIN";
       }
       return session;
     },
