@@ -15,15 +15,27 @@ export async function loginAction(
     });
     return {};
   } catch (error) {
+    // next/navigation redirect throws — must rethrow it
+    if (
+      error instanceof Error &&
+      (error.message === "NEXT_REDIRECT" || error.message.includes("NEXT_REDIRECT"))
+    ) {
+      throw error;
+    }
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
           return { error: "Invalid email or password." };
+        case "CallbackRouteError":
+          return { error: "Invalid email or password." };
         default:
-          return { error: "Something went wrong. Please try again." };
+          return {
+            error: `Auth error (${error.type}). Check AUTH_SECRET and AUTH_URL are set in Railway Variables.`,
+          };
       }
     }
-    throw error;
+    console.error("Login error:", error);
+    return { error: "Server error. Check deploy logs." };
   }
 }
 
