@@ -12,16 +12,23 @@ HOST="0.0.0.0"
 echo "=== remax-crm starting ==="
 echo "PORT=$PORT"
 
+# Railway: build DATABASE_URL from PG* vars if reference is empty
+if [ -z "$DATABASE_URL" ] || echo "$DATABASE_URL" | grep -qE '^\$\{\{'; then
+  if [ -n "$PGHOST" ] && [ -n "$PGUSER" ] && [ -n "$PGPASSWORD" ] && [ -n "$PGDATABASE" ]; then
+    PGPORT="${PGPORT:-5432}"
+    export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?schema=public"
+    echo "Built DATABASE_URL from PG* variables."
+  fi
+fi
+
 if [ -z "$DATABASE_URL" ]; then
   echo "FATAL: DATABASE_URL is not set."
-  echo "Fix: Railway -> remax-crm -> Variables -> Add Reference -> Postgres -> DATABASE_URL"
+  echo "Fix: Copy DATABASE_URL from Postgres -> Variables and paste it on remax-crm."
   exit 1
 fi
 
 if echo "$DATABASE_URL" | grep -qE 'localhost|127\.0\.0\.1'; then
-  echo "FATAL: DATABASE_URL points to localhost — that only works on your computer."
-  echo "Fix: Delete DATABASE_URL in Railway Variables, then re-add it as:"
-  echo "  + New Variable -> Add Reference -> Postgres service -> DATABASE_URL"
+  echo "FATAL: DATABASE_URL points to localhost."
   exit 1
 fi
 
@@ -30,13 +37,12 @@ if [ -z "$AUTH_SECRET" ]; then
   exit 1
 fi
 
-# Migrations in background so the server starts immediately (avoids 502)
 (
   echo "Running migrations..."
   npx prisma migrate deploy
   echo "Seeding database..."
   npx prisma db seed
-  echo "Database ready. Login: admin@remax.com / admin123"
+  echo "Database ready."
 ) &
 
 echo "Starting Next.js on $HOST:$PORT ..."
