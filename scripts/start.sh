@@ -12,8 +12,17 @@ HOST="0.0.0.0"
 echo "=== remax-crm starting ==="
 echo "PORT=$PORT"
 
-# Railway: build DATABASE_URL from PG* vars if reference is empty
-if [ -z "$DATABASE_URL" ] || echo "$DATABASE_URL" | grep -qE '^\$\{\{'; then
+# Railway: resolve database URL from several sources
+if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = '${{Postgres.DATABASE_URL}}' ]; then
+  DATABASE_URL=""
+fi
+
+if [ -z "$DATABASE_URL" ] && [ -n "$DATABASE_PRIVATE_URL" ]; then
+  export DATABASE_URL="$DATABASE_PRIVATE_URL"
+  echo "Using DATABASE_PRIVATE_URL."
+fi
+
+if [ -z "$DATABASE_URL" ]; then
   if [ -n "$PGHOST" ] && [ -n "$PGUSER" ] && [ -n "$PGPASSWORD" ] && [ -n "$PGDATABASE" ]; then
     PGPORT="${PGPORT:-5432}"
     export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?schema=public"
