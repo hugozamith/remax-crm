@@ -13,4 +13,4 @@ if [ -z "$AUTH_SECRET" ]; then
 fi
 
 npx prisma migrate deploy
-exec npx next start -p "${PORT:-3000}"
+exec npx next start -H 0.0.0.0 -p "${PORT:-3000}"
