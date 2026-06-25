@@ -20,11 +20,14 @@ if [ -z "$AUTH_SECRET" ]; then
   exit 1
 fi
 
-echo "Running migrations..."
-npx prisma migrate deploy
-
-echo "Seeding database (creates admin if missing)..."
-npx prisma db seed
+# Run DB setup in background so Next.js can start immediately (avoids 502)
+(
+  echo "Running migrations..."
+  npx prisma migrate deploy
+  echo "Seeding database..."
+  npx prisma db seed
+  echo "Database ready."
+) &
 
 echo "Starting Next.js on $HOST:$PORT ..."
 exec node node_modules/next/dist/bin/next start -H "$HOST" -p "$PORT"
