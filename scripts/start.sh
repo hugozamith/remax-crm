@@ -1,16 +1,29 @@
 #!/bin/sh
 set -e
 
+export NODE_ENV=production
+export AUTH_TRUST_HOST=true
+
+PORT="${PORT:-3000}"
+HOST="${HOSTNAME:-::}"
+
+echo "=== remax-crm starting ==="
+echo "PORT=$PORT HOST=$HOST"
+
 if [ -z "$DATABASE_URL" ]; then
-  echo "ERROR: DATABASE_URL is not set."
-  echo "In Railway: add PostgreSQL, then on the web service set DATABASE_URL = \${{Postgres.DATABASE_URL}}"
+  echo "FATAL: DATABASE_URL is not set."
+  echo "Railway: add PostgreSQL, then Variables -> Add Reference -> Postgres.DATABASE_URL"
   exit 1
 fi
 
 if [ -z "$AUTH_SECRET" ]; then
-  echo "ERROR: AUTH_SECRET is not set."
+  echo "FATAL: AUTH_SECRET is not set."
+  echo "Railway: add AUTH_SECRET (run: openssl rand -base64 32)"
   exit 1
 fi
 
+echo "Running migrations..."
 npx prisma migrate deploy
-exec npx next start -H 0.0.0.0 -p "${PORT:-3000}"
+
+echo "Starting Next.js on $HOST:$PORT ..."
+exec node node_modules/next/dist/bin/next start -H "$HOST" -p "$PORT"
