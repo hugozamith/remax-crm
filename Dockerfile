@@ -9,6 +9,8 @@ RUN npm ci --ignore-scripts
 
 COPY . .
 
+RUN rm -f .env .env.local
+
 RUN npx prisma generate && npm run build
 
 ENV NODE_ENV=production
