@@ -4,4 +4,3 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 restartPolicyType = "on_failure"
-postDeployCommand = "npx prisma db seed"

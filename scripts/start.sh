@@ -12,34 +12,29 @@ HOST="0.0.0.0"
 echo "=== remax-crm starting ==="
 echo "PORT=$PORT"
 
-# Railway: resolve database URL from several sources
-if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = '${{Postgres.DATABASE_URL}}' ]; then
-  DATABASE_URL=""
-fi
-
-if [ -z "$DATABASE_URL" ] && [ -n "$DATABASE_PRIVATE_URL" ]; then
-  export DATABASE_URL="$DATABASE_PRIVATE_URL"
-  echo "Using DATABASE_PRIVATE_URL."
-fi
-
-if [ -z "$DATABASE_URL" ]; then
-  if [ -n "$PGHOST" ] && [ -n "$PGUSER" ] && [ -n "$PGPASSWORD" ] && [ -n "$PGDATABASE" ]; then
-    PGPORT="${PGPORT:-5432}"
-    export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}?schema=public"
-    echo "Built DATABASE_URL from PG* variables."
+# Diagnostic: show which DB-related vars exist (not their values)
+for var in DATABASE_URL DATABASE_PRIVATE_URL DATABASE_PUBLIC_URL PGHOST PGUSER PGDATABASE PGPORT; do
+  eval "val=\$$var"
+  if [ -n "$val" ]; then
+    echo "  $var is set"
+  else
+    echo "  $var is NOT set"
   fi
-fi
+done
 
-if [ -z "$DATABASE_URL" ]; then
-  echo "FATAL: DATABASE_URL is not set."
-  echo "Fix: Copy DATABASE_URL from Postgres -> Variables and paste it on remax-crm."
+RESOLVED_URL=$(sh scripts/resolve-db-url.sh) || {
+  echo ""
+  echo "FATAL: Cannot connect to database."
+  echo ""
+  echo "On Railway -> remax-crm -> Variables, add these as REFERENCES from Postgres:"
+  echo "  PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT"
+  echo ""
+  echo "See RAILWAY.md for step-by-step instructions."
   exit 1
-fi
+}
 
-if echo "$DATABASE_URL" | grep -qE 'localhost|127\.0\.0\.1'; then
-  echo "FATAL: DATABASE_URL points to localhost."
-  exit 1
-fi
+export DATABASE_URL="$RESOLVED_URL"
+echo "Database URL resolved successfully."
 
 if [ -z "$AUTH_SECRET" ]; then
   echo "FATAL: AUTH_SECRET is not set."
@@ -51,7 +46,7 @@ fi
   npx prisma migrate deploy
   echo "Seeding database..."
   npx prisma db seed
-  echo "Database ready."
+  echo "Database ready. Login: admin@remax.com / admin123"
 ) &
 
 echo "Starting Next.js on $HOST:$PORT ..."
